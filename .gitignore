@@ -1,0 +1,7 @@
+# Compilación temporal de .NET
+src/**/bin/
+src/**/obj/
+.vs/
+
+# Carpeta temporal sin comprimir (>100MB); ya está incluida comprimida dentro de Instalador_SistemaLadrillera_Setup.exe
+Publicacion_Autocontenida_x64/

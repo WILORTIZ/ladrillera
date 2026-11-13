@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="SistemaLadrillera.Application/SistemaLadrillera.Application.csproj" />
+  <Project Path="SistemaLadrillera.Domain/SistemaLadrillera.Domain.csproj" />
+  <Project Path="SistemaLadrillera.Infrastructure/SistemaLadrillera.Infrastructure.csproj" />
+  <Project Path="SistemaLadrillera.Tests/SistemaLadrillera.Tests.csproj" />
+  <Project Path="SistemaLadrillera.Wpf/SistemaLadrillera.Wpf.csproj" />
+</Solution>

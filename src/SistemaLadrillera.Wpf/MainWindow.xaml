@@ -1,0 +1,1047 @@
+<Window x:Class="SistemaLadrillera.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Sistema de Gestión Integral para Ladrillera - 100% Offline (C# + SQLite)"
+        Height="820" Width="1380" MinHeight="680" MinWidth="1050"
+        WindowStartupLocation="CenterScreen"
+        Background="#F1F5F9">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="ColSidebar" Width="250"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ==================== PANEL LATERAL IZQUIERDO (ESTILO BOOTSTRAP DARK) ==================== -->
+        <Border Grid.Column="0" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,0,1,0">
+            <DockPanel LastChildFill="True">
+                <!-- Logo / Cabecera del Sistema -->
+                <Border DockPanel.Dock="Top" Background="#1E293B" Padding="16,18" BorderBrush="#334155" BorderThickness="0,0,0,1">
+                    <StackPanel>
+                        <TextBlock Text="🧱 SISTEMA LADRILLERA" Foreground="#F8FAFC" FontSize="15.5" FontWeight="Bold"/>
+                        <TextBlock Text="Gestión Integral • 100% Offline" Foreground="#94A3B8" FontSize="11.5" Margin="0,3,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Pie de barra lateral (Estado SQLite local) -->
+                <Border DockPanel.Dock="Bottom" Background="#090E17" Padding="12,10" BorderBrush="#1E293B" BorderThickness="0,1,0,0">
+                    <StackPanel>
+                        <TextBlock Text="● Base SQLite Local Activa (WAL)" Foreground="#22C55E" FontSize="11" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="TxtDbRutaCorta" Text="Documents\Ladrillera\SistemaLadrillera.db" Foreground="#64748B" FontSize="10" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Menú de los 10 Módulos -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,8">
+                    <StackPanel>
+                        <TextBlock Text="MENÚ PRINCIPAL" Foreground="#64748B" FontSize="10.5" FontWeight="Bold" Margin="18,6,0,4"/>
+                        <Button x:Name="BtnNavDashboard" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="0" Content="📊  1. Dashboard / Inicio"/>
+                        <Button x:Name="BtnNavProduccion" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="1" Content="🔥  2. Producción (Secado/Horno)"/>
+                        <Button x:Name="BtnNavInventario" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="2" Content="📦  3. Inventario y Kardex"/>
+                        <Button x:Name="BtnNavVentas" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="3" Content="🛒  4. Ventas, Pagos y Devol."/>
+                        <Button x:Name="BtnNavFacturacion" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="4" Content="🧾  5. Facturación y PDF"/>
+                        <Button x:Name="BtnNavCotizaciones" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="5" Content="📋  6. Cotizaciones"/>
+                        <Button x:Name="BtnNavTransporte" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="6" Content="🚚  7. Transporte y Fletes"/>
+                        <Button x:Name="BtnNavVendedores" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="7" Content="👔  8. Vendedores y Comisiones"/>
+                        <Button x:Name="BtnNavInformes" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="8" Content="📈  9. Informes y Exportación"/>
+                        <Button x:Name="BtnNavConfig" Style="{StaticResource NavButton}" Click="Nav_Click" Tag="9" Content="⚙️  10. Configuración y Backups"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- ==================== ÁREA CENTRAL DE TRABAJO ==================== -->
+        <DockPanel Grid.Column="1" LastChildFill="True">
+            <!-- Encabezado Superior -->
+            <Border DockPanel.Dock="Top" Background="White" Padding="18,12" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Style="{StaticResource BtnSecondary}" Padding="10,5" Margin="0,0,12,0" Click="BtnToggleSidebar_Click" Content="☰" ToolTip="Mostrar/Ocultar panel lateral"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="TxtTituloModulo" Text="1. Dashboard / Resumen Operativo" FontSize="18" FontWeight="Bold" Foreground="#0F172A"/>
+                        <TextBlock x:Name="TxtSubtituloEmpresa" Text="LADRILLERA SAN ANDRES S.A.S. • Operación Local" FontSize="12" Foreground="#64748B"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource BtnPrimary}" Click="BtnAccesoNuevaVenta_Click" Content="+ Nueva Venta"/>
+                        <Button Style="{StaticResource BtnSuccess}" Click="BtnAccesoBackupRapido_Click" Content="💾 Respaldo Rápido"/>
+                        <Button Style="{StaticResource BtnSecondary}" Click="BtnRefrescarTodo_Click" Content="↻ Actualizar"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Barra Inferior de Estado / Confirmaciones -->
+            <Border DockPanel.Dock="Bottom" Background="#1E293B" Padding="16,7">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="TxtBarraEstado" Text="Listo. Base de datos SQLite verificada correctamente." Foreground="#F8FAFC" FontSize="12"/>
+                    <TextBlock x:Name="TxtFechaActual" Grid.Column="1" Text="" Foreground="#94A3B8" FontSize="12"/>
+                </Grid>
+            </Border>
+
+            <!-- Contenedor de Vistas (TabControl sin pestañas visibles, controlado por el menú lateral) -->
+            <TabControl x:Name="MainTabs" BorderThickness="0" Background="Transparent" Padding="10">
+                <TabControl.ItemContainerStyle>
+                    <Style TargetType="TabItem">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                    </Style>
+                </TabControl.ItemContainerStyle>
+
+                <!-- ==================== MÓDULO 1: DASHBOARD ==================== -->
+                <TabItem Header="Dashboard">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <!-- Fila 1 de Tarjetas KPI -->
+                            <UniformGrid Columns="4">
+                                <Border Style="{StaticResource BootstrapCard}" BorderBrush="#0D6EFD" BorderThickness="4,1,1,1">
+                                    <StackPanel>
+                                        <TextBlock Text="VENTAS DEL DÍA (COP)" Foreground="#64748B" FontSize="11.5" FontWeight="Bold"/>
+                                        <TextBlock x:Name="KpiVentasHoy" Text="$0" Foreground="#0F172A" FontSize="23" FontWeight="Bold" Margin="0,6,0,2"/>
+                                        <TextBlock x:Name="KpiCantVentasHoy" Text="0 operaciones hoy" Foreground="#0D6EFD" FontSize="11.5"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource BootstrapCard}" BorderBrush="#198754" BorderThickness="4,1,1,1">
+                                    <StackPanel>
+                                        <TextBlock Text="VENTAS DEL MES (COP)" Foreground="#64748B" FontSize="11.5" FontWeight="Bold"/>
+                                        <TextBlock x:Name="KpiVentasMes" Text="$0" Foreground="#0F172A" FontSize="23" FontWeight="Bold" Margin="0,6,0,2"/>
+                                        <TextBlock x:Name="KpiGananciaMes" Text="Ganancia neta: $0" Foreground="#198754" FontSize="11.5"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource BootstrapCard}" BorderBrush="#DC3545" BorderThickness="4,1,1,1">
+                                    <StackPanel>
+                                        <TextBlock Text="CARTERA / SALDO CLIENTES" Foreground="#64748B" FontSize="11.5" FontWeight="Bold"/>
+                                        <TextBlock x:Name="KpiSaldoClientes" Text="$0" Foreground="#DC3545" FontSize="23" FontWeight="Bold" Margin="0,6,0,2"/>
+                                        <TextBlock Text="Cuentas por cobrar activas" Foreground="#64748B" FontSize="11.5"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource BootstrapCard}" BorderBrush="#C2410C" BorderThickness="4,1,1,1">
+                                    <StackPanel>
+                                        <TextBlock Text="INVENTARIO DISPONIBLE" Foreground="#64748B" FontSize="11.5" FontWeight="Bold"/>
+                                        <TextBlock x:Name="KpiStockDisponible" Text="0 Unid." Foreground="#0F172A" FontSize="23" FontWeight="Bold" Margin="0,6,0,2"/>
+                                        <TextBlock Text="Listo para despacho inmediato" Foreground="#C2410C" FontSize="11.5"/>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+
+                            <!-- Fila 2 de Tarjetas KPI -->
+                            <UniformGrid Columns="4">
+                                <Border Style="{StaticResource BootstrapCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="EN SECADO (UNIDADES)" Foreground="#64748B" FontSize="11.5" FontWeight="Bold"/>
+                                        <TextBlock x:Name="KpiStockSecado" Text="0" Foreground="#0F172A" FontSize="20" FontWeight="Bold" Margin="0,5,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource BootstrapCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="EN HORNO (UNIDADES)" Foreground="#64748B" FontSize="11.5" FontWeight="Bold"/>
+                                        <TextBlock x:Name="KpiStockHorno" Text="0" Foreground="#C2410C" FontSize="20" FontWeight="Bold" Margin="0,5,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource BootstrapCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="PÉRDIDAS / DAÑADOS" Foreground="#64748B" FontSize="11.5" FontWeight="Bold"/>
+                                        <TextBlock x:Name="KpiPerdidas" Text="0" Foreground="#DC3545" FontSize="20" FontWeight="Bold" Margin="0,5,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource BootstrapCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="ENTREGAS Y COMISIONES PEND." Foreground="#64748B" FontSize="11.5" FontWeight="Bold"/>
+                                        <TextBlock x:Name="KpiEntregasYComisiones" Text="0 despachos | $0" Foreground="#0F172A" FontSize="16" FontWeight="Bold" Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+
+                            <!-- Tabla Resumen de Productos en Planta -->
+                            <Border Style="{StaticResource BootstrapCard}">
+                                <StackPanel>
+                                    <TextBlock Text="Estado de Planta e Inventario por Tipo de Ladrillo" FontSize="15" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
+                                    <DataGrid x:Name="GridDashboardProductos" AutoGenerateColumns="False" Height="190">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Código" Binding="{Binding Codigo}" Width="90"/>
+                                            <DataGridTextColumn Header="Tipo de Ladrillo" Binding="{Binding Nombre}" Width="*"/>
+                                            <DataGridTextColumn Header="Disponible (Unid)" Binding="{Binding StockActual, StringFormat=N0}" Width="135"/>
+                                            <DataGridTextColumn Header="En Secado (Unid)" Binding="{Binding StockSecado, StringFormat=N0}" Width="135"/>
+                                            <DataGridTextColumn Header="En Horno (Unid)" Binding="{Binding StockHorno, StringFormat=N0}" Width="135"/>
+                                            <DataGridTextColumn Header="Dañados Acum." Binding="{Binding DanadosAcumulados, StringFormat=N0}" Width="120"/>
+                                            <DataGridTextColumn Header="Costo Unit. (COP)" Binding="{Binding CostoUnitarioCop, StringFormat=C0}" Width="135"/>
+                                            <DataGridTextColumn Header="Precio x Millar (COP)" Binding="{Binding PrecioMillarCop, StringFormat=C0}" Width="150"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Últimas Ventas Registradas -->
+                            <Border Style="{StaticResource BootstrapCard}">
+                                <StackPanel>
+                                    <TextBlock Text="Últimas Ventas Registradas" FontSize="15" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
+                                    <DataGrid x:Name="GridDashboardVentas" AutoGenerateColumns="False" Height="200">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Factura" Binding="{Binding FacturaId}" Width="140"/>
+                                            <DataGridTextColumn Header="Fecha" Binding="{Binding FechaIso}" Width="100"/>
+                                            <DataGridTextColumn Header="Cliente" Binding="{Binding ClienteNombre}" Width="180"/>
+                                            <DataGridTextColumn Header="Detalle Ladrillo" Binding="{Binding TipoLadrilloResumen}" Width="*"/>
+                                            <DataGridTextColumn Header="Total Venta" Binding="{Binding TotalVentaCop, StringFormat=C0}" Width="125"/>
+                                            <DataGridTextColumn Header="Saldo Cliente" Binding="{Binding SaldoClienteCop, StringFormat=C0}" Width="125"/>
+                                            <DataGridTextColumn Header="Pago" Binding="{Binding EstadoPago}" Width="95"/>
+                                            <DataGridTextColumn Header="Entrega" Binding="{Binding EstadoEntrega}" Width="95"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- ==================== MÓDULO 2: PRODUCCIÓN (SECADO, HORNO, PÉRDIDAS) ==================== -->
+                <TabItem Header="Produccion">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="380"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Formulario de Operaciones de Producción -->
+                        <Border Grid.Column="0" Style="{StaticResource BootstrapCard}">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="Registrar Movimiento de Producción" FontSize="15" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
+
+                                    <TextBlock Text="Tipo de Operación:" FontWeight="SemiBold"/>
+                                    <ComboBox x:Name="CmbProdOperacion" SelectedIndex="0" SelectionChanged="CmbProdOperacion_SelectionChanged">
+                                        <ComboBoxItem Content="1. Ingreso a Secado (Ladrillo crudo)"/>
+                                        <ComboBoxItem Content="2. Trasladar de Secado a Horno"/>
+                                        <ComboBoxItem Content="3. Salida de Horno a Inventario Disponible"/>
+                                        <ComboBoxItem Content="4. Registrar Pérdida / Material Dañado"/>
+                                    </ComboBox>
+
+                                    <TextBlock Text="Tipo de Ladrillo:" FontWeight="SemiBold"/>
+                                    <ComboBox x:Name="CmbProdProducto" DisplayMemberPath="Nombre" SelectedValuePath="Id"/>
+
+                                    <TextBlock Text="Cantidad (Unidades):" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="TxtProdCantidad" Text="1000"/>
+
+                                    <StackPanel x:Name="PanelProdPerdida" Visibility="Collapsed">
+                                        <TextBlock Text="Etapa donde ocurrió la pérdida:" FontWeight="SemiBold"/>
+                                        <ComboBox x:Name="CmbProdEtapaPerdida" SelectedIndex="0">
+                                            <ComboBoxItem Content="Secado"/>
+                                            <ComboBoxItem Content="Horno"/>
+                                            <ComboBoxItem Content="Inventario"/>
+                                        </ComboBox>
+                                        <TextBlock Text="Causa del daño / pérdida:" FontWeight="SemiBold"/>
+                                        <TextBox x:Name="TxtProdCausa" Text="Rotura en cocción / humedad"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Responsable de Planta:" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="TxtProdResponsable" Text="Jefe de Horno"/>
+
+                                    <TextBlock Text="Observaciones:" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="TxtProdObservaciones" Height="55" TextWrapping="Wrap" AcceptsReturn="True"/>
+
+                                    <Button Style="{StaticResource BtnPrimary}" Click="BtnRegistrarProduccion_Click" Content="✔ Guardar Movimiento de Producción" Margin="0,8,0,0"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+
+                        <!-- Tablas de Estado y Movimientos de Producción -->
+                        <Grid Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="210"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Style="{StaticResource BootstrapCard}">
+                                <StackPanel>
+                                    <TextBlock Text="Cantidades Actuales en Secado, Horno e Inventario" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <DataGrid x:Name="GridProdResumen" AutoGenerateColumns="False" Height="140">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Producto" Binding="{Binding Nombre}" Width="*"/>
+                                            <DataGridTextColumn Header="En Secado (Unid)" Binding="{Binding StockSecado, StringFormat=N0}" Width="140"/>
+                                            <DataGridTextColumn Header="En Horno (Unid)" Binding="{Binding StockHorno, StringFormat=N0}" Width="140"/>
+                                            <DataGridTextColumn Header="Inventario Disp." Binding="{Binding StockActual, StringFormat=N0}" Width="140"/>
+                                            <DataGridTextColumn Header="Dañados Acum." Binding="{Binding DanadosAcumulados, StringFormat=N0}" Width="130"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Row="1" Style="{StaticResource BootstrapCard}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Text="Historial de Movimientos de Producción y Pérdidas" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <DataGrid x:Name="GridProdHistorial" AutoGenerateColumns="False">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="55"/>
+                                            <DataGridTextColumn Header="Fecha" Binding="{Binding FechaIso}" Width="135"/>
+                                            <DataGridTextColumn Header="Producto" Binding="{Binding ProductoNombre}" Width="130"/>
+                                            <DataGridTextColumn Header="Movimiento" Binding="{Binding TipoMovimiento}" Width="165"/>
+                                            <DataGridTextColumn Header="Etapa" Binding="{Binding Etapa}" Width="90"/>
+                                            <DataGridTextColumn Header="Unidades" Binding="{Binding CantidadUnidades, StringFormat=N0}" Width="95"/>
+                                            <DataGridTextColumn Header="Causa Pérdida" Binding="{Binding CausaPerdida}" Width="140"/>
+                                            <DataGridTextColumn Header="Responsable" Binding="{Binding Responsable}" Width="110"/>
+                                            <DataGridTextColumn Header="Observaciones" Binding="{Binding Observaciones}" Width="*"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <!-- ==================== MÓDULO 3: INVENTARIO Y KARDEX ==================== -->
+                <TabItem Header="Inventario">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="370"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <!-- Crear/Editar Producto -->
+                                <Border Style="{StaticResource BootstrapCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="Catálogo de Productos (Ladrillos)" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Código (ej. PRD-05):"/>
+                                        <TextBox x:Name="TxtInvCodigo"/>
+                                        <TextBlock Text="Nombre del Tipo de Ladrillo:"/>
+                                        <TextBox x:Name="TxtInvNombre"/>
+                                        <TextBlock Text="Costo Unitario (COP):"/>
+                                        <TextBox x:Name="TxtInvCostoUnit" Text="500"/>
+                                        <TextBlock Text="Precio por Millar x 1000 (COP):"/>
+                                        <TextBox x:Name="TxtInvPrecioMillar" Text="500000"/>
+                                        <TextBlock Text="Stock Inicial (solo para producto nuevo):"/>
+                                        <TextBox x:Name="TxtInvStockInicial" Text="0"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                            <Button Style="{StaticResource BtnPrimary}" Click="BtnGuardarProducto_Click" Content="Guardar Producto"/>
+                                            <Button Style="{StaticResource BtnSecondary}" Click="BtnLimpiarProducto_Click" Content="Limpiar"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Entrada / Ajuste de Kardex -->
+                                <Border Style="{StaticResource BootstrapCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="Entrada o Ajuste de Inventario (Kardex)" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Producto:"/>
+                                        <ComboBox x:Name="CmbKardexProducto" DisplayMemberPath="Nombre" SelectedValuePath="Id"/>
+                                        <TextBlock Text="Concepto de Movimiento:"/>
+                                        <ComboBox x:Name="CmbKardexConcepto" SelectedIndex="0">
+                                            <ComboBoxItem Content="EntradaManual"/>
+                                            <ComboBoxItem Content="AjustePositivo"/>
+                                            <ComboBoxItem Content="AjusteNegativo"/>
+                                            <ComboBoxItem Content="PerdidaRotura"/>
+                                        </ComboBox>
+                                        <TextBlock Text="Cantidad (Unidades):"/>
+                                        <TextBox x:Name="TxtKardexCantidad" Text="500"/>
+                                        <TextBlock Text="Referencia / Documento:"/>
+                                        <TextBox x:Name="TxtKardexReferencia" Text="AJUSTE-PLANTA"/>
+                                        <TextBlock Text="Observaciones:"/>
+                                        <TextBox x:Name="TxtKardexObs"/>
+                                        <Button Style="{StaticResource BtnSuccess}" Click="BtnRegistrarAjusteKardex_Click" Content="+ Registrar en Kardex"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <Grid Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="220"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Style="{StaticResource BootstrapCard}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Text="Existencias y Precios por Tipo de Ladrillo (doble clic o seleccionar para editar)" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <DataGrid x:Name="GridInventarioProductos" AutoGenerateColumns="False" SelectionChanged="GridInventarioProductos_SelectionChanged">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="45"/>
+                                            <DataGridTextColumn Header="Código" Binding="{Binding Codigo}" Width="80"/>
+                                            <DataGridTextColumn Header="Producto" Binding="{Binding Nombre}" Width="*"/>
+                                            <DataGridTextColumn Header="Inventario Actual" Binding="{Binding StockActual, StringFormat=N0}" Width="125"/>
+                                            <DataGridTextColumn Header="Entradas (Suma)" Binding="{Binding EntradasAcumuladas, StringFormat=N0}" Width="115"/>
+                                            <DataGridTextColumn Header="Ventas (Suma)" Binding="{Binding VentasAcumuladas, StringFormat=N0}" Width="110"/>
+                                            <DataGridTextColumn Header="Dañados (Suma)" Binding="{Binding DanadosAcumulados, StringFormat=N0}" Width="110"/>
+                                            <DataGridTextColumn Header="Costo Unit. (COP)" Binding="{Binding CostoUnitarioCop, StringFormat=C0}" Width="120"/>
+                                            <DataGridTextColumn Header="Precio x 1000 (COP)" Binding="{Binding PrecioMillarCop, StringFormat=C0}" Width="135"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </DockPanel>
+                            </Border>
+
+                            <Border Grid.Row="1" Style="{StaticResource BootstrapCard}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Text="Kardex / Historial Completo de Movimientos de Inventario" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <DataGrid x:Name="GridKardex" AutoGenerateColumns="False">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                                            <DataGridTextColumn Header="Fecha y Hora" Binding="{Binding FechaIso}" Width="135"/>
+                                            <DataGridTextColumn Header="Producto" Binding="{Binding ProductoNombre}" Width="120"/>
+                                            <DataGridTextColumn Header="Concepto" Binding="{Binding Concepto}" Width="135"/>
+                                            <DataGridTextColumn Header="Referencia" Binding="{Binding Referencia}" Width="130"/>
+                                            <DataGridTextColumn Header="Entrada (+)" Binding="{Binding CantidadEntrada, StringFormat=N0}" Width="90"/>
+                                            <DataGridTextColumn Header="Salida (-)" Binding="{Binding CantidadSalida, StringFormat=N0}" Width="90"/>
+                                            <DataGridTextColumn Header="Saldo Disp." Binding="{Binding SaldoPosterior, StringFormat=N0}" Width="95"/>
+                                            <DataGridTextColumn Header="Observaciones" Binding="{Binding Observaciones}" Width="*"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <!-- ==================== MÓDULO 4: VENTAS, SALDOS/PAGOS Y DEVOLUCIONES ==================== -->
+                <TabItem Header="Ventas">
+                    <TabControl Background="White" Padding="8">
+                        <!-- Subpestaña 4.1: Nueva Venta -->
+                        <TabItem Header="🛒 4.1 Registrar Nueva Venta" FontWeight="SemiBold">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="410"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                                    <StackPanel Margin="6">
+                                        <TextBlock Text="Datos del Cliente y Despacho" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Consecutivo Factura Automático:"/>
+                                        <TextBox x:Name="TxtVentaConsecutivoPreview" IsReadOnly="True" Background="#F1F5F9" FontWeight="Bold"/>
+
+                                        <TextBlock Text="Nombre del Cliente *:"/>
+                                        <TextBox x:Name="TxtVentaCliente"/>
+
+                                        <UniformGrid Columns="2">
+                                            <StackPanel>
+                                                <TextBlock Text="Teléfono:"/>
+                                                <TextBox x:Name="TxtVentaTelefono"/>
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="Dirección / Obra:"/>
+                                                <TextBox x:Name="TxtVentaDireccion"/>
+                                            </StackPanel>
+                                        </UniformGrid>
+
+                                        <UniformGrid Columns="2">
+                                            <StackPanel>
+                                                <TextBlock Text="Vendedor:"/>
+                                                <ComboBox x:Name="CmbVentaVendedor" DisplayMemberPath="Nombre" SelectedValuePath="Id"/>
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="Placa Transporte:"/>
+                                                <TextBox x:Name="TxtVentaPlaca" Text="ABC-123"/>
+                                            </StackPanel>
+                                        </UniformGrid>
+
+                                        <UniformGrid Columns="2">
+                                            <StackPanel>
+                                                <TextBlock Text="Conductor:"/>
+                                                <TextBox x:Name="TxtVentaConductor"/>
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="Flete Asignado (COP):"/>
+                                                <TextBox x:Name="TxtVentaFlete" Text="0" TextChanged="TxtVentaRecalcular_TextChanged"/>
+                                            </StackPanel>
+                                        </UniformGrid>
+
+                                        <CheckBox x:Name="ChkVentaIncluirFlete" Content="Sumar flete al total de la factura del cliente" Margin="0,4,0,8" Checked="ChkVentaIncluirFlete_Changed" Unchecked="ChkVentaIncluirFlete_Changed"/>
+
+                                        <UniformGrid Columns="2">
+                                            <StackPanel>
+                                                <TextBlock Text="Abono / Pago Inicial (COP):"/>
+                                                <TextBox x:Name="TxtVentaAbonoInicial" Text="0"/>
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="Medio de Pago:"/>
+                                                <ComboBox x:Name="CmbVentaMedioPago" SelectedIndex="0">
+                                                    <ComboBoxItem Content="Efectivo"/>
+                                                    <ComboBoxItem Content="Transferencia"/>
+                                                    <ComboBoxItem Content="Consignación"/>
+                                                    <ComboBoxItem Content="Cheque"/>
+                                                </ComboBox>
+                                            </StackPanel>
+                                        </UniformGrid>
+
+                                        <TextBlock Text="Observaciones:"/>
+                                        <TextBox x:Name="TxtVentaObservaciones"/>
+
+                                        <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,6,10,8">
+                                            <StackPanel>
+                                                <TextBlock x:Name="TxtVentaResumenTotal" Text="TOTAL VENTA: $0 COP" FontSize="16" FontWeight="Bold" Foreground="#0D6EFD"/>
+                                                <TextBlock x:Name="TxtVentaResumenUnidades" Text="0 ítems en el pedido" FontSize="12" Foreground="#475569"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Button Style="{StaticResource BtnSuccess}" Click="BtnGuardarVentaCompleta_Click" Content="✔ Confirmar Venta y Emitir Factura" FontSize="14" Padding="14,10"/>
+                                    </StackPanel>
+                                </ScrollViewer>
+
+                                <!-- Agregar Líneas de Productos a la Venta -->
+                                <DockPanel Grid.Column="1" Margin="8">
+                                    <Border DockPanel.Dock="Top" Style="{StaticResource BootstrapCard}" Margin="0,0,0,8">
+                                        <StackPanel>
+                                            <TextBlock Text="Agregar Ladrillos al Pedido (Soporta Unidad o Millar = 1.000 Unidades)" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+                                            <UniformGrid Columns="5">
+                                                <StackPanel>
+                                                    <TextBlock Text="Producto:"/>
+                                                    <ComboBox x:Name="CmbVentaLineaProducto" DisplayMemberPath="Nombre" SelectedValuePath="Id" SelectionChanged="CmbVentaLineaProducto_SelectionChanged"/>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="Unidad Medida:"/>
+                                                    <ComboBox x:Name="CmbVentaLineaUnidad" SelectedIndex="0" SelectionChanged="CmbVentaLineaProducto_SelectionChanged">
+                                                        <ComboBoxItem Content="Unidad"/>
+                                                        <ComboBoxItem Content="Millar"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="Cantidad:"/>
+                                                    <TextBox x:Name="TxtVentaLineaCantidad" Text="1"/>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="Precio (COP):"/>
+                                                    <TextBox x:Name="TxtVentaLineaPrecio" Text="0"/>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="% Descuento:"/>
+                                                    <TextBox x:Name="TxtVentaLineaDescuento" Text="0"/>
+                                                </StackPanel>
+                                            </UniformGrid>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Style="{StaticResource BtnPrimary}" Click="BtnAgregarLineaVenta_Click" Content="+ Agregar Producto a la Venta"/>
+                                                <Button Style="{StaticResource BtnDanger}" Click="BtnQuitarLineaVenta_Click" Content="Quitar Línea Seleccionada"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <DataGrid x:Name="GridVentaLineasActuales" AutoGenerateColumns="False">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Producto" Binding="{Binding ProductoNombre}" Width="*"/>
+                                            <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad, StringFormat=N0}" Width="90"/>
+                                            <DataGridTextColumn Header="Unidad" Binding="{Binding Unidad}" Width="90"/>
+                                            <DataGridTextColumn Header="Unidades Físicas" Binding="{Binding CantidadUnidadesFisicas, StringFormat=N0}" Width="120"/>
+                                            <DataGridTextColumn Header="Precio (COP)" Binding="{Binding PrecioPorUnidadMedidaCop, StringFormat=C0}" Width="120"/>
+                                            <DataGridTextColumn Header="% Desc." Binding="{Binding DescuentoPct}" Width="75"/>
+                                            <DataGridTextColumn Header="Total Línea (COP)" Binding="{Binding TotalLineaCop, StringFormat=C0}" Width="140"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </DockPanel>
+                            </Grid>
+                        </TabItem>
+
+                        <!-- Subpestaña 4.2: Historial de Ventas (26 columnas) + Pagos + Devoluciones -->
+                        <TabItem Header="📋 4.2 Historial de Ventas, Saldos/Abonos y Devoluciones" FontWeight="SemiBold">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="240"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Barra de búsqueda y acciones sobre la venta seleccionada -->
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4,6">
+                                    <TextBlock Text="Buscar Cliente/Factura:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBox x:Name="TxtFiltroVentas" Width="220" Margin="0,0,8,0"/>
+                                    <Button Style="{StaticResource BtnPrimary}" Click="BtnFiltrarVentas_Click" Content="🔍 Buscar"/>
+                                    <Button Style="{StaticResource BtnSuccess}" Click="BtnExportarPdfVentaSeleccionada_Click" Content="📄 Generar/Abrir PDF Factura"/>
+                                    <Button Style="{StaticResource BtnDanger}" Click="BtnAnularVentaSeleccionada_Click" Content="✖ Anular Venta Seleccionada"/>
+                                </StackPanel>
+
+                                <!-- Tabla de Ventas -->
+                                <DataGrid Grid.Row="1" x:Name="GridHistorialVentas" AutoGenerateColumns="False" Margin="4">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="45"/>
+                                        <DataGridTextColumn Header="Fecha" Binding="{Binding FechaIso}" Width="90"/>
+                                        <DataGridTextColumn Header="Factura_ID" Binding="{Binding FacturaId}" Width="135"/>
+                                        <DataGridTextColumn Header="Cliente" Binding="{Binding ClienteNombre}" Width="150"/>
+                                        <DataGridTextColumn Header="Ladrillos" Binding="{Binding TipoLadrilloResumen}" Width="170"/>
+                                        <DataGridTextColumn Header="Total Venta" Binding="{Binding TotalVentaCop, StringFormat=C0}" Width="115"/>
+                                        <DataGridTextColumn Header="Pagado" Binding="{Binding MontoPagadoCop, StringFormat=C0}" Width="110"/>
+                                        <DataGridTextColumn Header="Saldo Cliente" Binding="{Binding SaldoClienteCop, StringFormat=C0}" Width="115"/>
+                                        <DataGridTextColumn Header="Estado Pago" Binding="{Binding EstadoPago}" Width="95"/>
+                                        <DataGridTextColumn Header="Entrega" Binding="{Binding EstadoEntrega}" Width="90"/>
+                                        <DataGridTextColumn Header="Vendedor" Binding="{Binding VendedorNombre}" Width="115"/>
+                                        <DataGridTextColumn Header="Comisión" Binding="{Binding ComisionCop, StringFormat=C0}" Width="95"/>
+                                        <DataGridTextColumn Header="Ganancia Neta" Binding="{Binding GananciaNetaCop, StringFormat=C0}" Width="115"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <!-- Paneles inferiores: Registrar Abono/Pago y Registrar Devolución -->
+                                <UniformGrid Grid.Row="2" Columns="2">
+                                    <!-- Registrar Abono / Pago -->
+                                    <Border Style="{StaticResource BootstrapCard}">
+                                        <StackPanel>
+                                            <TextBlock Text="💵 Registrar Abono / Pago sobre la Venta Seleccionada" FontWeight="Bold" FontSize="13.5" Margin="0,0,0,6"/>
+                                            <UniformGrid Columns="3">
+                                                <StackPanel>
+                                                    <TextBlock Text="Monto Abono (COP):"/>
+                                                    <TextBox x:Name="TxtPagoMonto" Text="100000"/>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="Medio de Pago:"/>
+                                                    <ComboBox x:Name="CmbPagoMedio" SelectedIndex="0">
+                                                        <ComboBoxItem Content="Efectivo"/>
+                                                        <ComboBoxItem Content="Transferencia"/>
+                                                        <ComboBoxItem Content="Consignación"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="Referencia / Recibo:"/>
+                                                    <TextBox x:Name="TxtPagoReferencia" Text="REC-01"/>
+                                                </StackPanel>
+                                            </UniformGrid>
+                                            <Button Style="{StaticResource BtnSuccess}" Click="BtnRegistrarAbono_Click" Content="✔ Registrar Abono y Actualizar Saldo"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Registrar Devolución -->
+                                    <Border Style="{StaticResource BootstrapCard}">
+                                        <StackPanel>
+                                            <TextBlock Text="↩️ Registrar Devolución (Solo suma a Inventario si es Apto y Aprobado)" FontWeight="Bold" FontSize="13.5" Margin="0,0,0,6"/>
+                                            <UniformGrid Columns="3">
+                                                <StackPanel>
+                                                    <TextBlock Text="Producto Devuelto:"/>
+                                                    <ComboBox x:Name="CmbDevProducto" DisplayMemberPath="Nombre" SelectedValuePath="Id"/>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="Cantidad (Unidades):"/>
+                                                    <TextBox x:Name="TxtDevCantidad" Text="50"/>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="Estado del Ladrillo:"/>
+                                                    <ComboBox x:Name="CmbDevEstadoProducto" SelectedIndex="0">
+                                                        <ComboBoxItem Content="Apto"/>
+                                                        <ComboBoxItem Content="Dañado"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                            </UniformGrid>
+                                            <UniformGrid Columns="3">
+                                                <StackPanel>
+                                                    <TextBlock Text="Motivo Devolución:"/>
+                                                    <TextBox x:Name="TxtDevMotivo" Text="Sobrante de obra"/>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="Recibido por:"/>
+                                                    <TextBox x:Name="TxtDevRecibidoPor" Text="Bodega"/>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="Descontar Saldo (COP):"/>
+                                                    <TextBox x:Name="TxtDevDescuentoSaldo" Text="0"/>
+                                                </StackPanel>
+                                            </UniformGrid>
+                                            <Button Style="{StaticResource BtnPrimary}" Click="BtnRegistrarDevolucion_Click" Content="↩ Procesar Devolución"/>
+                                        </StackPanel>
+                                    </Border>
+                                </UniformGrid>
+                            </Grid>
+                        </TabItem>
+                    </TabControl>
+                </TabItem>
+
+                <!-- ==================== MÓDULO 5: FACTURACIÓN Y PDF ==================== -->
+                <TabItem Header="Facturacion">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource BootstrapCard}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Consultar Facturas Emitidas:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBox x:Name="TxtFiltroFacturas" Width="240" Margin="0,0,10,0"/>
+                                <Button Style="{StaticResource BtnPrimary}" Click="BtnFiltrarFacturas_Click" Content="🔍 Buscar Factura"/>
+                                <Button Style="{StaticResource BtnSuccess}" Click="BtnGenerarPdfFacturaModulo_Click" Content="📄 Generar y Abrir PDF Local"/>
+                                <TextBlock Text="Nota: Comprobante interno PDF (No sustituye factura electrónica DIAN)." Foreground="#64748B" VerticalAlignment="Center" Margin="14,0,0,0" FontSize="11.5"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource BootstrapCard}">
+                            <DataGrid x:Name="GridFacturas" AutoGenerateColumns="False">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                                    <DataGridTextColumn Header="Factura_ID" Binding="{Binding FacturaCodigo}" Width="150"/>
+                                    <DataGridTextColumn Header="Fecha" Binding="{Binding FechaIso}" Width="100"/>
+                                    <DataGridTextColumn Header="Cliente" Binding="{Binding ClienteNombre}" Width="180"/>
+                                    <DataGridTextColumn Header="Teléfono" Binding="{Binding Telefono}" Width="110"/>
+                                    <DataGridTextColumn Header="Subtotal" Binding="{Binding SubtotalCop, StringFormat=C0}" Width="120"/>
+                                    <DataGridTextColumn Header="Descuento" Binding="{Binding DescuentoCop, StringFormat=C0}" Width="105"/>
+                                    <DataGridTextColumn Header="Flete" Binding="{Binding FleteCop, StringFormat=C0}" Width="105"/>
+                                    <DataGridTextColumn Header="Total (COP)" Binding="{Binding TotalCop, StringFormat=C0}" Width="130"/>
+                                    <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="95"/>
+                                    <DataGridTextColumn Header="Ruta PDF Local" Binding="{Binding RutaPdf}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+                    </DockPanel>
+                </TabItem>
+
+                <!-- ==================== MÓDULO 6: COTIZACIONES ==================== -->
+                <TabItem Header="Cotizaciones">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="380"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Style="{StaticResource BootstrapCard}">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="Crear Nueva Cotización" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="Cliente *:"/>
+                                    <TextBox x:Name="TxtCotCliente"/>
+                                    <TextBlock Text="Teléfono:"/>
+                                    <TextBox x:Name="TxtCotTelefono"/>
+                                    <TextBlock Text="Producto:"/>
+                                    <ComboBox x:Name="CmbCotProducto" DisplayMemberPath="Nombre" SelectedValuePath="Id" SelectionChanged="CmbCotProducto_SelectionChanged"/>
+                                    <UniformGrid Columns="2">
+                                        <StackPanel>
+                                            <TextBlock Text="Unidad:"/>
+                                            <ComboBox x:Name="CmbCotUnidad" SelectedIndex="0" SelectionChanged="CmbCotProducto_SelectionChanged">
+                                                <ComboBoxItem Content="Unidad"/>
+                                                <ComboBoxItem Content="Millar"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Cantidad:"/>
+                                            <TextBox x:Name="TxtCotCantidad" Text="1000"/>
+                                        </StackPanel>
+                                    </UniformGrid>
+                                    <UniformGrid Columns="2">
+                                        <StackPanel>
+                                            <TextBlock Text="Precio Unit/Millar (COP):"/>
+                                            <TextBox x:Name="TxtCotPrecio" Text="500"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="% Descuento:"/>
+                                            <TextBox x:Name="TxtCotDescuento" Text="0"/>
+                                        </StackPanel>
+                                    </UniformGrid>
+                                    <TextBlock Text="Vigente Hasta (YYYY-MM-DD):"/>
+                                    <TextBox x:Name="TxtCotVigencia"/>
+                                    <TextBlock Text="Observaciones:"/>
+                                    <TextBox x:Name="TxtCotObservaciones"/>
+
+                                    <Button Style="{StaticResource BtnPrimary}" Click="BtnCrearCotizacion_Click" Content="📋 Guardar Cotización"/>
+                                    <Separator Margin="0,12"/>
+                                    <TextBlock Text="Acciones sobre Cotización Seleccionada:" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <Button Style="{StaticResource BtnSuccess}" Click="BtnConvertirCotizacionEnVenta_Click" Content="🛒 Aceptar y Convertir en Venta (1 Clic)"/>
+                                    <Button Style="{StaticResource BtnSecondary}" Click="BtnGenerarPdfCotizacion_Click" Content="📄 Exportar Cotización a PDF"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+
+                        <Border Grid.Column="1" Style="{StaticResource BootstrapCard}">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Top" Text="Listado de Cotizaciones (Seleccionar para Convertir en Venta o Exportar PDF)" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <DataGrid x:Name="GridCotizaciones" AutoGenerateColumns="False">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="45"/>
+                                        <DataGridTextColumn Header="Cotizacion_ID" Binding="{Binding CotizacionCodigo}" Width="140"/>
+                                        <DataGridTextColumn Header="Fecha" Binding="{Binding FechaIso}" Width="95"/>
+                                        <DataGridTextColumn Header="Cliente" Binding="{Binding ClienteNombre}" Width="155"/>
+                                        <DataGridTextColumn Header="Ladrillo" Binding="{Binding TipoLadrilloResumen}" Width="140"/>
+                                        <DataGridTextColumn Header="Cant." Binding="{Binding CantidadResumen, StringFormat=N0}" Width="75"/>
+                                        <DataGridTextColumn Header="Unidad" Binding="{Binding UnidadResumen}" Width="70"/>
+                                        <DataGridTextColumn Header="Total (COP)" Binding="{Binding TotalCop, StringFormat=C0}" Width="125"/>
+                                        <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="90"/>
+                                        <DataGridTextColumn Header="Vigente Hasta" Binding="{Binding VigenteHastaIso}" Width="100"/>
+                                        <DataGridTextColumn Header="Convertida" Binding="{Binding ConvertidaEnVenta}" Width="80"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </DockPanel>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- ==================== MÓDULO 7: TRANSPORTE Y FLETES ==================== -->
+                <TabItem Header="Transporte">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="370"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <Border Style="{StaticResource BootstrapCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="Registrar Despacho / Flete" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Placa Vehículo *:"/>
+                                        <TextBox x:Name="TxtTransPlaca" Text="ABC-123"/>
+                                        <TextBlock Text="Conductor:"/>
+                                        <TextBox x:Name="TxtTransConductor" Text="Carlos Ruiz"/>
+                                        <TextBlock Text="Teléfono Conductor:"/>
+                                        <TextBox x:Name="TxtTransTelefono" Text="3100000000"/>
+                                        <TextBlock Text="Cliente / Pedido Asociado:"/>
+                                        <TextBox x:Name="TxtTransPedido"/>
+                                        <TextBlock Text="Costo Flete (COP):"/>
+                                        <TextBox x:Name="TxtTransCostoFlete" Text="80000"/>
+                                        <Button Style="{StaticResource BtnPrimary}" Click="BtnRegistrarFlete_Click" Content="🚚 Guardar Flete / Salida"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource BootstrapCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="Registrar Vehículo en Flota" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Placa:"/>
+                                        <TextBox x:Name="TxtVehPlaca" Text="XYZ-987"/>
+                                        <TextBlock Text="Descripción (ej. Camión Sencillo / Doble Troque):"/>
+                                        <TextBox x:Name="TxtVehDesc" Text="Camión 6 Toneladas"/>
+                                        <TextBlock Text="Capacidad (Unidades):"/>
+                                        <TextBox x:Name="TxtVehCapacidad" Text="3000"/>
+                                        <Button Style="{StaticResource BtnSecondary}" Click="BtnGuardarVehiculo_Click" Content="+ Guardar Vehículo"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <Grid Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="180"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Style="{StaticResource BootstrapCard}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Text="Vehículos Registrados" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <DataGrid x:Name="GridVehiculos" AutoGenerateColumns="False">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Placa" Binding="{Binding Placa}" Width="120"/>
+                                            <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" Width="*"/>
+                                            <DataGridTextColumn Header="Capacidad (Unid)" Binding="{Binding CapacidadUnidades, StringFormat=N0}" Width="150"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </DockPanel>
+                            </Border>
+
+                            <Border Grid.Row="1" Style="{StaticResource BootstrapCard}">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="Historial de Fletes y Entregas" FontSize="14.5" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                        <Button Style="{StaticResource BtnSuccess}" Click="BtnMarcarFleteEntregado_Click" Content="✔ Marcar Venta/Flete Seleccionado como ENTREGADO"/>
+                                    </StackPanel>
+                                    <DataGrid x:Name="GridFletes" AutoGenerateColumns="False">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                                            <DataGridTextColumn Header="Fecha Salida" Binding="{Binding FechaSalidaIso}" Width="105"/>
+                                            <DataGridTextColumn Header="Placa" Binding="{Binding Placa}" Width="100"/>
+                                            <DataGridTextColumn Header="Conductor" Binding="{Binding Conductor}" Width="150"/>
+                                            <DataGridTextColumn Header="Teléfono" Binding="{Binding Telefono}" Width="110"/>
+                                            <DataGridTextColumn Header="Cliente / Pedido" Binding="{Binding ClientePedido}" Width="*"/>
+                                            <DataGridTextColumn Header="Costo Flete (COP)" Binding="{Binding CostoFleteCop, StringFormat=C0}" Width="135"/>
+                                            <DataGridTextColumn Header="Estado Entrega" Binding="{Binding EstadoEntrega}" Width="110"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <!-- ==================== MÓDULO 8: VENDEDORES Y COMISIONES ==================== -->
+                <TabItem Header="Vendedores">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="360"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Style="{StaticResource BootstrapCard}">
+                            <StackPanel>
+                                <TextBlock Text="Registro de Vendedores" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <TextBlock Text="Código (ej. V003):"/>
+                                <TextBox x:Name="TxtVendCodigo" Text="V003"/>
+                                <TextBlock Text="Nombre Completo *:"/>
+                                <TextBox x:Name="TxtVendNombre"/>
+                                <TextBlock Text="% Comisión sobre Venta:"/>
+                                <TextBox x:Name="TxtVendPct" Text="2.5"/>
+                                <TextBlock Text="Estado:"/>
+                                <ComboBox x:Name="CmbVendEstado" SelectedIndex="0">
+                                    <ComboBoxItem Content="Activo"/>
+                                    <ComboBoxItem Content="Inactivo"/>
+                                </ComboBox>
+                                <Button Style="{StaticResource BtnPrimary}" Click="BtnGuardarVendedor_Click" Content="👔 Guardar Vendedor"/>
+
+                                <Separator Margin="0,14"/>
+                                <TextBlock Text="Liquidación de Comisiones" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <Button Style="{StaticResource BtnSuccess}" Click="BtnPagarComision_Click" Content="💵 Marcar Comisión Seleccionada como PAGADA"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Grid Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="210"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Style="{StaticResource BootstrapCard}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Text="Plantilla de Vendedores (Hoja Vendedores)" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <DataGrid x:Name="GridVendedores" AutoGenerateColumns="False">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                                            <DataGridTextColumn Header="Código" Binding="{Binding Codigo}" Width="90"/>
+                                            <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="*"/>
+                                            <DataGridTextColumn Header="% Comisión" Binding="{Binding ComisionPct}" Width="110"/>
+                                            <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="100"/>
+                                            <DataGridTextColumn Header="Fecha Ingreso" Binding="{Binding FechaIngresoIso}" Width="120"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </DockPanel>
+                            </Border>
+
+                            <Border Grid.Row="1" Style="{StaticResource BootstrapCard}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Text="Comisiones Generadas por Ventas" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <DataGrid x:Name="GridComisiones" AutoGenerateColumns="False">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                                            <DataGridTextColumn Header="Fecha" Binding="{Binding FechaIso}" Width="100"/>
+                                            <DataGridTextColumn Header="Factura" Binding="{Binding FacturaId}" Width="140"/>
+                                            <DataGridTextColumn Header="Vendedor" Binding="{Binding VendedorNombre}" Width="*"/>
+                                            <DataGridTextColumn Header="Base Venta (COP)" Binding="{Binding BaseVentaCop, StringFormat=C0}" Width="135"/>
+                                            <DataGridTextColumn Header="% Com." Binding="{Binding ComisionPct}" Width="80"/>
+                                            <DataGridTextColumn Header="Comisión (COP)" Binding="{Binding ComisionCop, StringFormat=C0}" Width="130"/>
+                                            <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="100"/>
+                                            <DataGridTextColumn Header="Fecha Pago" Binding="{Binding FechaPagoIso}" Width="110"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <!-- ==================== MÓDULO 9: INFORMES Y EXPORTACIÓN ==================== -->
+                <TabItem Header="Informes">
+                    <StackPanel>
+                        <Border Style="{StaticResource BootstrapCard}">
+                            <StackPanel>
+                                <TextBlock Text="Centro de Informes y Exportación Local (PDF y CSV/Excel)" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="Fecha Desde (YYYY-MM-DD):" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBox x:Name="TxtInfDesde" Width="130" Margin="0,0,16,0"/>
+                                    <TextBlock Text="Fecha Hasta (YYYY-MM-DD):" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBox x:Name="TxtInfHasta" Width="130"/>
+                                </StackPanel>
+
+                                <UniformGrid Columns="3">
+                                    <Border Style="{StaticResource BootstrapCard}" Background="#F8FAFC">
+                                        <StackPanel>
+                                            <TextBlock Text="📊 Informe de Ventas y Ganancia Neta" FontWeight="Bold" FontSize="14"/>
+                                            <TextBlock Text="Incluye facturas, totales, pagos, fletes, comisiones y utilidad." Foreground="#64748B" TextWrapping="Wrap" Margin="0,4,0,10"/>
+                                            <Button Style="{StaticResource BtnPrimary}" Click="BtnExportarVentasCsv_Click" Content="Exportar Ventas a CSV (Excel)"/>
+                                            <Button Style="{StaticResource BtnSecondary}" Click="BtnExportarVentasPdf_Click" Content="Exportar Ventas a PDF"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Style="{StaticResource BootstrapCard}" Background="#F8FAFC">
+                                        <StackPanel>
+                                            <TextBlock Text="📦 Informe de Inventario y Producción" FontWeight="Bold" FontSize="14"/>
+                                            <TextBlock Text="Existencias disponibles, en secado, en horno, pérdidas y valoración." Foreground="#64748B" TextWrapping="Wrap" Margin="0,4,0,10"/>
+                                            <Button Style="{StaticResource BtnPrimary}" Click="BtnExportarInventarioCsv_Click" Content="Exportar Inventario a CSV (Excel)"/>
+                                            <Button Style="{StaticResource BtnSecondary}" Click="BtnExportarInventarioPdf_Click" Content="Exportar Inventario a PDF"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Style="{StaticResource BootstrapCard}" Background="#F8FAFC">
+                                        <StackPanel>
+                                            <TextBlock Text="💰 Cuentas por Cobrar y Comisiones" FontWeight="Bold" FontSize="14"/>
+                                            <TextBlock Text="Clientes con saldo pendiente de pago y liquidación de vendedores." Foreground="#64748B" TextWrapping="Wrap" Margin="0,4,0,10"/>
+                                            <Button Style="{StaticResource BtnDanger}" Click="BtnExportarCarteraCsv_Click" Content="Exportar Cartera Pendiente (CSV)"/>
+                                            <Button Style="{StaticResource BtnSuccess}" Click="BtnExportarComisionesCsv_Click" Content="Exportar Comisiones (CSV)"/>
+                                        </StackPanel>
+                                    </Border>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- ==================== MÓDULO 10: CONFIGURACIÓN, MIGRACIÓN EXCEL Y BACKUPS ==================== -->
+                <TabItem Header="Configuracion">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="430"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <!-- Copias de Seguridad y Salud SQLite -->
+                                <Border Style="{StaticResource BootstrapCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="💾 Copias de Seguridad y Salud SQLite" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <Button Style="{StaticResource BtnSuccess}" Click="BtnAccesoBackupRapido_Click" Content="💾 Crear Copia de Seguridad Ahora (.db)"/>
+                                        <Button Style="{StaticResource BtnPrimary}" Click="BtnRestaurarBackup_Click" Content="📂 Restaurar Copia de Seguridad desde Archivo..."/>
+                                        <Button Style="{StaticResource BtnSecondary}" Click="BtnVerificarIntegridad_Click" Content="🛡️ Ejecutar PRAGMA integrity_check"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Migrador Idempotente desde Excel -->
+                                <Border Style="{StaticResource BootstrapCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="📥 Migrador de Datos desde Libros Excel (.xlsm/.xlsx)" FontSize="15" FontWeight="Bold" Margin="0,0,0,6"/>
+                                        <TextBlock Text="Importa productos, secado, horno, vendedores y configuración sin duplicar registros existentes." Foreground="#64748B" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Ruta del archivo Excel:"/>
+                                        <TextBox x:Name="TxtRutaExcelMigracion" Text="D:\antigravity\ladrillera\Sistema_Ladrillera.xlsm"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Style="{StaticResource BtnSecondary}" Click="BtnSeleccionarExcel_Click" Content="Examinar..."/>
+                                            <Button Style="{StaticResource BtnPrimary}" Click="BtnEjecutarMigracionExcel_Click" Content="▶ Ejecutar Migración Idempotente"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Editar Parámetro Seleccionado -->
+                                <Border Style="{StaticResource BootstrapCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="⚙️ Actualizar Parámetro de Configuración" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Parámetro:"/>
+                                        <TextBox x:Name="TxtCfgClave"/>
+                                        <TextBlock Text="Valor:"/>
+                                        <TextBox x:Name="TxtCfgValor"/>
+                                        <Button Style="{StaticResource BtnPrimary}" Click="BtnGuardarParametroCfg_Click" Content="Guardar Parámetro"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <Grid Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="180"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Style="{StaticResource BootstrapCard}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Text="Control de Consecutivos (FAC y COT)" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <DataGrid x:Name="GridConsecutivos" AutoGenerateColumns="False">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="80"/>
+                                            <DataGridTextColumn Header="Prefijo" Binding="{Binding Prefijo}" Width="90"/>
+                                            <DataGridTextColumn Header="Intervalo Reinicio" Binding="{Binding IntervaloReinicio}" Width="140"/>
+                                            <DataGridTextColumn Header="Días Reinicio" Binding="{Binding DiasReinicio}" Width="110"/>
+                                            <DataGridTextColumn Header="Último Periodo" Binding="{Binding LastKey}" Width="130"/>
+                                            <DataGridTextColumn Header="Último Contador" Binding="{Binding LastCount}" Width="*"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </DockPanel>
+                            </Border>
+
+                            <Border Grid.Row="1" Style="{StaticResource BootstrapCard}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Text="Parámetros Generales del Sistema (Seleccionar fila para editar)" FontSize="14.5" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <DataGrid x:Name="GridConfiguraciones" AutoGenerateColumns="False" SelectionChanged="GridConfiguraciones_SelectionChanged">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Parámetro" Binding="{Binding Parametro}" Width="210"/>
+                                            <DataGridTextColumn Header="Valor Actual" Binding="{Binding Valor}" Width="240"/>
+                                            <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" Width="*"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </DockPanel>
+    </Grid>
+</Window>

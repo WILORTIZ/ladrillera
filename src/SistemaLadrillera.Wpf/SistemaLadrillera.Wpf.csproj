@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\SistemaLadrillera.Domain\SistemaLadrillera.Domain.csproj" />
+    <ProjectReference Include="..\SistemaLadrillera.Application\SistemaLadrillera.Application.csproj" />
+    <ProjectReference Include="..\SistemaLadrillera.Infrastructure\SistemaLadrillera.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+</Project>
